@@ -1,4 +1,4 @@
-# --- Pangunahing Checks ---
+# --- Main Checks ---
 if ($ExecutionContext.SessionState.LanguageMode.value__ -ne 0) {
     Write-Host "Windows PowerShell is not running in Full Language Mode."
     return
@@ -7,7 +7,7 @@ if ($ExecutionContext.SessionState.LanguageMode.value__ -ne 0) {
 function Check3rdAV {
     $avList = Get-CimInstance -Namespace root\SecurityCenter2 -Class AntiVirusProduct | Where-Object { $_.displayName -notlike '*windows*' } | Select-Object -ExpandProperty displayName
     if ($avList) {
-        Write-Host "Maaaring pinipigilan ng 3rd party antivirus:"
+        Write-Host "A 3rd party antivirus may be blocking:"
         Write-Host (" - " + ($avList -join ", "))
     }
 }
@@ -15,7 +15,7 @@ function CheckFile {
     param([string]$FilePath)
     if (-not (Test-Path $FilePath)) {
         Check3rdAV
-        Write-Host "Hindi nakita o nalikha ang file: $FilePath, aborting!"
+        Write-Host "File not found or not created: $FilePath, aborting!"
         throw
     }
 }
@@ -30,18 +30,16 @@ $extractDir = "$tempDir\extracted"
 if (!(Test-Path $tempDir)) { New-Item -ItemType Directory -Path $tempDir | Out-Null }
 if (!(Test-Path $extractDir)) { New-Item -ItemType Directory -Path $extractDir | Out-Null }
 
-Write-Host "Ido-download ang ZIP mula sa $url ..."
 try {
     Invoke-WebRequest -Uri $url -OutFile $output
 } catch {
     Check3rdAV
-    Write-Host "Hindi ma-download ang ZIP. Automatic abort."
+    Write-Host "Could not download the ZIP. Automatic abort."
     exit 1
 }
 CheckFile $output
 
 # Extract ZIP
-Write-Host "Ina-extract ang mga files..."
 try {
     Expand-Archive -Path $output -DestinationPath $extractDir -Force
 } catch {
@@ -49,26 +47,25 @@ try {
     exit 1
 }
 
-# Hanapin ang .cmd/.bat file (IASL.cmd o iba pa) sa kahit anong subfolder
+# Find .cmd/.bat file (IASL.cmd or others) in any subfolder
 $batchFile = Get-ChildItem -Path $extractDir -Recurse -Include IASL.cmd,*.cmd,*.bat | Where-Object { $_.Name -ieq "IASL.cmd" -or $_.Extension -in ".cmd",".bat" } | Select-Object -First 1
 
 if (-not $batchFile) {
-    Write-Host "Walang nakitang batch file (.cmd/.bat) sa extracted folder. Aborting."
+    Write-Host "No batch file (.cmd/.bat) found in the extracted folder. Aborting."
     exit 1
 }
 
-Write-Host "Nakita ang batch file: $($batchFile.FullName)"
-# Patakbuhin gamit Start-Process at hintayin matapos
+# Run with Start-Process and wait to finish
 try {
     Start-Process -FilePath $batchFile.FullName -Wait
 } catch {
-    Write-Host "Hindi mapatakbo ang batch file!"
+    Write-Host "Unable to run the batch file!"
     exit 1
 }
 
 # Cleanup
-Write-Host "Nililinis ang temp files..."
+Write-Host "Cleaning up temp files..."
 Remove-Item -Path $output -Force -ErrorAction SilentlyContinue
 Remove-Item -Path $tempDir -Recurse -Force -ErrorAction SilentlyContinue
 
-Write-Host "Tapos na. Enjoy!"
+Write-Host "Done. Enjoy!"
