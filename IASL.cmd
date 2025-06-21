@@ -17,7 +17,7 @@ if '%errorlevel%' NEQ '0' (
     echo UAC.ShellExecute "%~s0", "", "", "runas", 1 >> "%temp%\getadmin.vbs"
     "%temp%\getadmin.vbs"
     del "%temp%\getadmin.vbs"
-    exit /B
+    exit
 )
 
 :: Set paths
@@ -88,7 +88,7 @@ if not defined IDM_VERSION (
 if not defined IDM_VERSION (
     echo %RED% Error: Unable to retrieve the installed Internet Download Manager version. Please ensure Internet Download Manager is installed correctly.%RESET%
     pause
-    exit /b
+    exit
 )
 
 timeout /t 1 >nul
@@ -102,24 +102,23 @@ echo.
 echo.                                                  
 echo [36m                                            SELECT AN OPTION:[0m
 echo.
-echo [33m 				╔═ (1) Clean Previous IDM Registry Entries
-echo 				║
-echo 				╠══ (2) Activate Internet Download Manager
-echo 				║
-echo 				╠═══ (3) Extra FileTypes Extensions
-echo 				║
-echo 				╠════ (4) Do Everything (1 + 2 + 3)
-echo 				║
-echo 				╚═╦═══ (5) Exit
-echo          	 	          ║
+echo [33m                 ╔═ (1) Clean Previous IDM Registry Entries
+echo                 ║
+echo                 ╠══ (2) Activate Internet Download Manager
+echo                 ║
+echo                 ╠═══ (3) Extra FileTypes Extensions
+echo                 ║
+echo                 ╠════ (4) Do Everything (1 + 2 + 3)
+echo                 ║
+echo                 ╚═╦═══ (5) Exit
+echo                             ║
 set /p choice=.                                 ╚════^> 
 
 if "%choice%"=="1" call :CleanRegistry & call :askReturn
 if "%choice%"=="2" call :ActivateIDM & call :askReturn
 if "%choice%"=="3" call :AddExtensions & call :askReturn
 if "%choice%"=="4" call :DoEverything & call :askReturn
-if "%choice%"=="5" call :quit
-
+if "%choice%"=="5" goto :quit
 
 :: If the input was invalid (not 1-5), re-prompt
 echo %RED% Invalid option. Please enter a number from 1 to 5.%RESET%
@@ -128,7 +127,6 @@ goto :menu
 
 ::----------------------
 :CleanRegistry
-:: Full registry cleaning logic
 call :terminateProcess "IDMan.exe"
 echo %YELLOW% Cleaning IDM-related Registry Entries...%RESET%
 
@@ -256,10 +254,10 @@ if /i "%back%"=="Y" (
     set "choice="
     goto :menu
 )
-if /i "%back%"=="N" call :quit
+if /i "%back%"=="N" goto :quit
 
 echo %RED% Invalid input. Please type Y or N.%RESET%
-set "choice="  :: 💡 Clear choice before looping
+set "back="
 goto :askReturn
 
 ::----------------------
