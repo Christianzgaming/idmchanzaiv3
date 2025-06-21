@@ -1,38 +1,74 @@
-# Check the instructions here on how to use it https://github.com/Christianzgaming/IDM-v3-activat0r
-
-# Define variables
-$tempDir = "$env:TEMP\RE0GA1NA-3MD1-AO3L-N3WO-5DT4EN5RE5TN5I"
-$url = "https://github.com/Christianzgaming/IDM-v3-activat0r/releases/download/idm/IDM-v3-activat0r.zip"
-$output = "$tempDir\IDM-v3-activat0r.zip"
-$extractDir = "$tempDir"
-
-# Ensure the temporary directory exists
-if (!(Test-Path -Path $tempDir)) {
-    New-Item -ItemType Directory -Path $tempDir | Out-Null
+# --- Pangunahing Checks ---
+if ($ExecutionContext.SessionState.LanguageMode.value__ -ne 0) {
+    Write-Host "Windows PowerShell is not running in Full Language Mode."
+    return
 }
 
-# Download the ZIP file to the temporary directory
-Invoke-WebRequest -Uri $url -OutFile $output
-
-# Extract the ZIP file
-Write-Host "Extracting the necessary files for your system"
-Expand-Archive -Path $output -DestinationPath $extractDir -Force
-
-# Run the batch file and wait for it to finish
-$batchFile = "$extractDir\IDM-v3-activat0r\IASL.cmd"
-if (Test-Path -Path $batchFile) {
-    Write-Host "Running the batch script..."
-    Start-Process -FilePath "cmd.exe" -ArgumentList "/c `"$batchFile`"" -Wait
-} else {
-    Write-Host "Error: Batch script not found in $extractDir."
+function Check3rdAV {
+    $avList = Get-CimInstance -Namespace root\SecurityCenter2 -Class AntiVirusProduct | Where-Object { $_.displayName -notlike '*windows*' } | Select-Object -ExpandProperty displayName
+    if ($avList) {
+        Write-Host "Maaaring pinipigilan ng 3rd party antivirus:"
+        Write-Host (" - " + ($avList -join ", "))
+    }
+}
+function CheckFile {
+    param([string]$FilePath)
+    if (-not (Test-Path $FilePath)) {
+        Check3rdAV
+        Write-Host "Hindi nakita o nalikha ang file: $FilePath, aborting!"
+        throw
+    }
 }
 
-# Clean up: Delete the extracted directory after script.bat has finished
-Write-Host "Cleaning up extracted files..."
-Remove-Item -Path $output -Force
-Remove-Item -Path $extractDir -Recurse -Force
+# --- Main Variables ---
+$tempDir = "$env:TEMP\AUTOMATE-$(Get-Random)"
+$url = "https://github.com/Christianzgaming/idmchanzaiv3/releases/download/idmchanzaiv3/idmchanzaiv3.zip"      # Palitan mo ito
+$output = "$tempDir\idmchanzaiv3.zip"
+$extractDir = "$tempDir\extracted"
 
-# Clean up the main temp directory
-Write-Host "Cleaning up main temp directory..."
-Write-Host "Operation completed successfully."
+# Create directories as needed
+if (!(Test-Path $tempDir)) { New-Item -ItemType Directory -Path $tempDir | Out-Null }
+if (!(Test-Path $extractDir)) { New-Item -ItemType Directory -Path $extractDir | Out-Null }
 
+Write-Host "Ido-download ang ZIP mula sa $url ..."
+try {
+    Invoke-WebRequest -Uri $url -OutFile $output
+} catch {
+    Check3rdAV
+    Write-Host "Hindi ma-download ang ZIP. Automatic abort."
+    exit 1
+}
+CheckFile $output
+
+# Extract ZIP - regardless of folder structure
+Write-Host "Ina-extract ang mga files..."
+try {
+    Expand-Archive -Path $output -DestinationPath $extractDir -Force
+} catch {
+    Write-Host "Extraction failed! Aborting..."
+    exit 1
+}
+
+# Hanapin ang .cmd/.bat file sa kahit anong subfolder
+$batchFile = Get-ChildItem -Path $extractDir -Recurse -Include *.cmd,*.bat | Select-Object -First 1
+
+if (-not $batchFile) {
+    Write-Host "Walang nakitang batch file (.cmd/.bat) sa extracted folder. Aborting."
+    exit 1
+}
+
+Write-Host "Nakita ang batch file: $($batchFile.FullName)"
+# Patakbuhin gamit Start-Process at hintayin matapos
+try {
+    Start-Process -FilePath $batchFile.FullName -Wait
+} catch {
+    Write-Host "Hindi mapatakbo ang batch file!"
+    exit 1
+}
+
+# Cleanup
+Write-Host "Nililinis ang temp files..."
+Remove-Item -Path $output -Force -ErrorAction SilentlyContinue
+Remove-Item -Path $tempDir -Recurse -Force -ErrorAction SilentlyContinue
+
+Write-Host "Tapos na. Enjoy!"
