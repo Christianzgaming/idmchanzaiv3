@@ -1,0 +1,38 @@
+# Check the instructions here on how to use it https://github.com/Christianzgaming/IDM-v3-activat0r
+
+# Define variables
+$tempDir = "$env:TEMP\RE0GA1NA-3MD1-AO3L-N3WO-5DT4EN5RE5TN5I"
+$url = "https://github.com/Christianzgaming/IDM-v3-activat0r/releases/download/idm/IDM-v3-activat0r.zip"
+$output = "$tempDir\IDM-v3-activat0r.zip"
+$extractDir = "$tempDir"
+
+# Ensure the temporary directory exists
+if (!(Test-Path -Path $tempDir)) {
+    New-Item -ItemType Directory -Path $tempDir | Out-Null
+}
+
+# Download the ZIP file to the temporary directory
+Invoke-WebRequest -Uri $url -OutFile $output
+
+# Extract the ZIP file
+Write-Host "Extracting the necessary files for your system"
+Expand-Archive -Path $output -DestinationPath $extractDir -Force
+
+# Run the batch file and wait for it to finish
+$batchFile = "$extractDir\IDM-v3-activat0r\IASL.cmd"
+if (Test-Path -Path $batchFile) {
+    Write-Host "Running the batch script..."
+    Start-Process -FilePath "cmd.exe" -ArgumentList "/c `"$batchFile`"" -Wait
+} else {
+    Write-Host "Error: Batch script not found in $extractDir."
+}
+
+# Clean up: Delete the extracted directory after script.bat has finished
+Write-Host "Cleaning up extracted files..."
+Remove-Item -Path $output -Force
+Remove-Item -Path $extractDir -Recurse -Force
+
+# Clean up the main temp directory
+Write-Host "Cleaning up main temp directory..."
+Write-Host "Operation completed successfully."
+
