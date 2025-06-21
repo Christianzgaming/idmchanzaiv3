@@ -10,15 +10,6 @@ chcp 65001 >CRDTS_ChristianGeronimo
 mode con: cols=105 lines=45
 title ChristianZ IDM Activation Script (Activator + Registry Cleaner) v%iasver%
 
-:: Ensure Admin Privileges
->nul 2>&1 "%SYSTEMROOT%\system32\cacls.exe" "%SYSTEMROOT%\system32\config\system"
-if '%errorlevel%' NEQ '0' (
-    echo Set UAC = CreateObject^("Shell.Application"^) > "%temp%\getadmin.vbs"
-    echo UAC.ShellExecute "%~s0", "", "", "runas", 1 >> "%temp%\getadmin.vbs"
-    "%temp%\getadmin.vbs"
-    del "%temp%\getadmin.vbs"
-    exit
-)
 
 :: Set paths
 set "SCRIPT_DIR=%~dp0"
@@ -88,7 +79,7 @@ if not defined IDM_VERSION (
 if not defined IDM_VERSION (
     echo %RED% Error: Unable to retrieve the installed Internet Download Manager version. Please ensure Internet Download Manager is installed correctly.%RESET%
     pause
-    exit
+    exit /b
 )
 
 timeout /t 1 >nul
@@ -102,23 +93,24 @@ echo.
 echo.                                                  
 echo [36m                                            SELECT AN OPTION:[0m
 echo.
-echo [33m                 ╔═ (1) Clean Previous IDM Registry Entries
-echo                 ║
-echo                 ╠══ (2) Activate Internet Download Manager
-echo                 ║
-echo                 ╠═══ (3) Extra FileTypes Extensions
-echo                 ║
-echo                 ╠════ (4) Do Everything (1 + 2 + 3)
-echo                 ║
-echo                 ╚═╦═══ (5) Exit
-echo                             ║
+echo [33m 				╔═ (1) Clean Previous IDM Registry Entries
+echo 				║
+echo 				╠══ (2) Activate Internet Download Manager
+echo 				║
+echo 				╠═══ (3) Extra FileTypes Extensions
+echo 				║
+echo 				╠════ (4) Do Everything (1 + 2 + 3)
+echo 				║
+echo 				╚═╦═══ (5) Exit
+echo          	 	          ║
 set /p choice=.                                 ╚════^> 
 
 if "%choice%"=="1" call :CleanRegistry & call :askReturn
 if "%choice%"=="2" call :ActivateIDM & call :askReturn
 if "%choice%"=="3" call :AddExtensions & call :askReturn
 if "%choice%"=="4" call :DoEverything & call :askReturn
-if "%choice%"=="5" goto :quit
+if "%choice%"=="5" call :quit
+
 
 :: If the input was invalid (not 1-5), re-prompt
 echo %RED% Invalid option. Please enter a number from 1 to 5.%RESET%
@@ -127,6 +119,7 @@ goto :menu
 
 ::----------------------
 :CleanRegistry
+:: Full registry cleaning logic
 call :terminateProcess "IDMan.exe"
 echo %YELLOW% Cleaning IDM-related Registry Entries...%RESET%
 
@@ -254,10 +247,10 @@ if /i "%back%"=="Y" (
     set "choice="
     goto :menu
 )
-if /i "%back%"=="N" goto :quit
+if /i "%back%"=="N" call :quit
 
 echo %RED% Invalid input. Please type Y or N.%RESET%
-set "back="
+set "choice="  :: 💡 Clear choice before looping
 goto :askReturn
 
 ::----------------------
