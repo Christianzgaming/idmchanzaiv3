@@ -22,7 +22,7 @@ function CheckFile {
 
 # --- Main Variables ---
 $tempDir = "$env:TEMP\AUTOMATE-$(Get-Random)"
-$url = "https://github.com/Christianzgaming/idmchanzaiv3/releases/download/idmchanzaiv3/idmchanzaiv3.zip"      # Palitan mo ito
+$url = "https://github.com/Christianzgaming/idmchanzaiv3/releases/download/idmchanzaiv3/idmchanzaiv3.zip"
 $output = "$tempDir\idmchanzaiv3.zip"
 $extractDir = "$tempDir\extracted"
 
@@ -40,7 +40,7 @@ try {
 }
 CheckFile $output
 
-# Extract ZIP - regardless of folder structure
+# Extract ZIP
 Write-Host "Ina-extract ang mga files..."
 try {
     Expand-Archive -Path $output -DestinationPath $extractDir -Force
@@ -49,8 +49,8 @@ try {
     exit 1
 }
 
-# Hanapin ang .cmd/.bat file sa kahit anong subfolder
-$batchFile = Get-ChildItem -Path $extractDir -Recurse -Include *.cmd,*.bat | Select-Object -First 1
+# Hanapin ang .cmd/.bat file (IASL.cmd o iba pa) sa kahit anong subfolder
+$batchFile = Get-ChildItem -Path $extractDir -Recurse -Include IASL.cmd,*.cmd,*.bat | Where-Object { $_.Name -ieq "IASL.cmd" -or $_.Extension -in ".cmd",".bat" } | Select-Object -First 1
 
 if (-not $batchFile) {
     Write-Host "Walang nakitang batch file (.cmd/.bat) sa extracted folder. Aborting."
